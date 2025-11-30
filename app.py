@@ -37,7 +37,7 @@ print("Loading SBERT...")
 sbert_model = SentenceTransformer(SBERT_MODEL, device=device)
 
 print("Loading Qwen2.5-0.5B-Instruct (local LLM)...")
-llm_tokenizer = AutoTokenizer.from_pretrained(
+llm_tokenizer =  AutoTokenizer.from_pretrained(
     LLM_MODEL,
     trust_remote_code=True
 )
