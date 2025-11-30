@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Domain Segmentation</title>
+    <!-- Load Tailwind CSS via CDN for easy styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Configure Tailwind for a nice default font
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom styles for better aesthetics and UI feel */
+        body {
+            background-color: #f7f9fb;
+            font-family: 'Inter', sans-serif;
+        }
+        .container-card {
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            max-width: 90%;
+        }
+        .button-primary {
+            transition: all 0.2s;
+        }
+        .button-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+        }
+        #result-box {
+            white-space: pre-wrap; /* Preserve text formatting from the backend */
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-start justify-center p-4 sm:p-8">
+
+    <div class="container-card bg-white p-6 sm:p-10 mt-10 rounded-xl w-full max-w-2xl">
+        <h1 class="text-3xl font-bold text-gray-900 mb-4 text-center">Domain Segmentation</h1>
+        <p class="text-center text-gray-500 mb-8">Enter your query to segment the underlying knowledge domain.</p>
+
+        <!-- Input Form -->
+        <div class="flex flex-col sm:flex-row gap-4 mb-8">
+            <input type="text" id="queryInput" placeholder="Enter query here (e.g., 'how to bake sourdough bread')"
+                   class="flex-grow p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition duration-150"
+                   aria-label="Enter query for domain segmentation">
+            
+            <button id="segmentButton"
+                    class="button-primary bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md focus:outline-none focus:ring-4 focus:ring-indigo-500 focus:ring-opacity-50">
+                <span id="buttonText">Segment Domain</span>
+            </button>
+        </div>
+
+        <!-- Result Display Area -->
+        <div class="bg-gray-50 p-6 rounded-xl border border-gray-200">
+            <h2 class="text-xl font-semibold text-gray-700 mb-3">Analysis Result</h2>
+            <div id="loadingIndicator" class="hidden text-center text-indigo-600 font-medium">
+                <svg class="animate-spin h-5 w-5 mr-3 inline text-indigo-600" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Processing...
+            </div>
+            <pre id="result-box" class="text-gray-800 text-base min-h-[5rem] overflow-x-auto">The result of the segmentation will appear here after clicking the button.</pre>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const input = document.getElementById('queryInput');
+            const button = document.getElementById('segmentButton');
+            const buttonText = document.getElementById('buttonText');
+            const resultBox = document.getElementById('result-box');
+            const loadingIndicator = document.getElementById('loadingIndicator');
+
+            // Function to handle the form submission and API call
+            async function segmentQuery() {
+                const query = input.value.trim();
+                if (!query) {
+                    resultBox.textContent = "Please enter a query or sentence to segment.";
+                    return;
+                }
+
+                // --- UI Feedback Setup ---
+                button.disabled = true;
+                buttonText.textContent = 'Processing...';
+                loadingIndicator.classList.remove('hidden');
+                resultBox.textContent = ''; 
+                resultBox.classList.remove('text-red-600');
+
+                try {
+                    const response = await fetch('/api/segment', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ query: query })
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        // Handle server errors
+                        let errorMessage = data.error || "An unknown error occurred on the server.";
+                        resultBox.textContent = `Error: ${errorMessage}`;
+                        resultBox.classList.add('text-red-600');
+                    } else {
+                        // Display successful result from the placeholder
+                        resultBox.textContent = data.segmentation;
+                    }
+
+                } catch (error) {
+                    // Handle network errors (e.g., Flask server is down)
+                    resultBox.textContent = `Network Error: Could not reach the Flask server. Please ensure 'python app.py' is running.`;
+                    resultBox.classList.add('text-red-600');
+                    console.error('Fetch error:', error);
+                } finally {
+                    // --- UI Reset ---
+                    button.disabled = false;
+                    buttonText.textContent = 'Segment Domain';
+                    loadingIndicator.classList.add('hidden');
+                }
+            }
+
+            // Event listener for the button click
+            button.addEventListener('click', segmentQuery);
+
+            // Event listener for the Enter key press in the input field
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !button.disabled) {
+                    segmentQuery();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
